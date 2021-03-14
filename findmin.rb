@@ -2,7 +2,10 @@ require 'csv'
 require './lib.rb'
 
 csv_in = ARGV[0]
-raise "Input file name in argument" unless csv_in
+c = ARGV[1].to_i
+threshold = ARGV[2].to_f
+radius = ARGV[3].to_f
+raise "Input file name in argument. Usage: ruby findmin.rb <spectrum_csv> <moving average half neighborhood> <peak max threshold> <peak loosening radius>" unless csv_in
 raise "File #{csv_in} is not found" unless File.exist? csv_in
 spect_name = File.basename csv_in, '.csv'
 puts csv_in
@@ -15,9 +18,20 @@ csvin.close
 Dir.mkdir('plot') if !Dir.exist? 'plot'
 
 # PEAK PICKING PARAMETERS
-c = 10 # Moving average +- neighborhood
-threshold = 94.4 # Pick only peaks lower than this
-radius = 10 # Distance sparser than such
+if c == nil
+    puts "Moving average (half) neighborhood not input. Using default: 2"
+    c = 2 # Moving average +- neighborhood
+end
+
+if threshold == nil
+    puts "Peak picking threshold not input. Using default: 99"
+    threshold = 99 # Pick only peaks lower than this
+end
+
+if radius == nil
+    puts "Peak loosening radii not input. Using default: 10"
+    radius = 10 # Distance sparser than such
+end
 
 ma = Array.new
 (0+c..data.size-c-1).each do |i|
