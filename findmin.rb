@@ -2,11 +2,31 @@ require 'csv'
 require './lib.rb'
 
 csv_in = ARGV[0]
-c = ARGV[1].to_i
-threshold = ARGV[2].to_f
-radius = ARGV[3].to_f
 raise "Input file name in argument. Usage: ruby findmin.rb <spectrum_csv> <moving average half neighborhood> <peak max threshold> <peak loosening radius>" unless csv_in
 raise "File #{csv_in} is not found" unless File.exist? csv_in
+# PEAK PICKING PARAMETERS
+if ARGV[1]
+    c = ARGV[1].to_i
+else
+    puts "Moving average (half) neighborhood not input. Using default: 2"
+    c = 2 # Moving average +- neighborhood
+end
+
+if ARGV[2]
+    threshold = ARGV[2].to_f
+else
+    puts "Peak picking threshold not input. Using default: 99"
+    threshold = 99 # Pick only peaks lower than this
+end
+
+if ARGV[3]
+    radius = ARGV[3].to_f
+else
+    puts "Peak loosening radii not input. Using default: 10"
+    radius = 10 # Distance sparser than such
+end
+puts "Parameter: neighborhood #{c}; threshold #{threshold}; radius #{radius}"
+
 spect_name = File.basename csv_in, '.csv'
 puts csv_in
 #csv_in = 'output/21c01-3-6.csv'
@@ -16,22 +36,6 @@ data = csv.read.map{|pt| [pt[0].to_f, pt[1].to_f]}
 csvin.close
 
 Dir.mkdir('plot') if !Dir.exist? 'plot'
-
-# PEAK PICKING PARAMETERS
-if c == nil
-    puts "Moving average (half) neighborhood not input. Using default: 2"
-    c = 2 # Moving average +- neighborhood
-end
-
-if threshold == nil
-    puts "Peak picking threshold not input. Using default: 99"
-    threshold = 99 # Pick only peaks lower than this
-end
-
-if radius == nil
-    puts "Peak loosening radii not input. Using default: 10"
-    radius = 10 # Distance sparser than such
-end
 
 ma = Array.new
 (0+c..data.size-c-1).each do |i|
@@ -60,9 +64,10 @@ while i < local_min.size-1
         loosened.push local_min[i+1] if i == local_min.size-2
         i +=1
     else
-        loser = (local_min[i][1] - local_min[i+1][1] > 0) ? i : i+1
+        loser = (local_min[i][1] - local_min[i+1][1] >= 0) ? i : i+1
         #puts "comparing #{local_min[i..i+1]}, loser is #{loser}"
         local_min.delete_at loser
+        loosened.push local_min[i] if i == local_min.size-1
         #puts "deleting at #{loser}"
     end
 end
